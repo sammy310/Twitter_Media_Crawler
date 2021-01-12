@@ -16,6 +16,40 @@ ACCESS_TOKEN_SECRET=
 
 ---
 
+## Result
+```
+TwitterIllustrationCrawler
+│  .env
+│  .gitattributes
+│  .gitignore
+│  illustrationCrawler.py
+│  last_id.txt
+│  LICENSE
+│  since_id.txt
+│  
+├─illust
+│  └─202101
+│      ├─20210111
+│      │      20210111_000421.jpg
+│      │      20210111_213513.jpg
+│      │      20210111_233604.jpg
+│      │      20210111_233604_1.jpg
+│      │      20210111_233604_2.jpg
+│      │      
+│      └─20210112
+│              20210112_002050.jpg
+│              20210112_002140.jpg
+│              20210112_002155.jpg
+│              
+└─tweet
+    └─202101
+            20210111.json
+            20210112.json
+```
+> Used [Unicode Tree Generator](https://github.com/sammy310/Tree-Creater)
+
+---
+
 ## Environment
 - Python 3.8.3 :: Anaconda
 - python-dotenv==0.14.0
