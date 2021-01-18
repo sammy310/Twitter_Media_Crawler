@@ -3,6 +3,10 @@
 
 ---
 
+- Using tweepy for Twitter API
+
+---
+
 ## Must Create `.env` File!!
 1. File name : `.env`
 2. File contents :
