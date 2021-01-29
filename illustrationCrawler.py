@@ -169,7 +169,7 @@ if latestID is not None:
         with open(SINCE_ID_PATH, 'r') as f:
             savedLatestID = int(f.readline())
 
-    if savedLatestID is not None and savedLatestID < latestID:
+    if savedLatestID is None or savedLatestID < latestID:
         with open(SINCE_ID_PATH, 'w') as f:
             f.write(str(latestID))
 
@@ -179,6 +179,6 @@ if lastID is not None:
         with open(LAST_ID_PATH, 'r') as f:
             savedLastID = int(f.readline())
     
-    if savedLastID is not None and savedLastID > lastID:
+    if savedLastID is None or savedLastID > lastID:
         with open(LAST_ID_PATH, 'w') as f:
             f.write(str(lastID))
