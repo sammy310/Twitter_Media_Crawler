@@ -160,7 +160,7 @@ for illust in illustration:
         wget.download(illustURL, savePath)
     except:
         with open(ERR_PATH, 'a+') as f:
-            f.write(f'{illust[0]} - {illust[1]}')
+            f.write(f'{illust[0]} - {illust[1]}\n')
 
 
 if latestID is not None:
