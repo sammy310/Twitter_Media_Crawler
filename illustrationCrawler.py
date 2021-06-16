@@ -12,6 +12,21 @@ from dotenv import load_dotenv
 import datetime
 
 
+
+def GetNewFilePath(filePath, ext):
+    if os.path.exists(f'{filePath}{ext}'):
+        dupCount = 1
+        while True:
+            if not os.path.exists(f'{filePath}_{dupCount}{ext}'):
+                filePath += f'_{dupCount}'
+                break
+            else:
+                dupCount += 1
+
+    return (filePath + ext)
+
+
+
 SINCE_ID_PATH = 'since_id.txt'
 LAST_ID_PATH = 'last_id.txt'
 ILLUST_PATH = 'illust'
@@ -47,6 +62,34 @@ lastID = None
 illustration = []
 tweetCount = 0
 
+
+# Download Error
+
+print('Error Check\n')
+err_text = ""
+with open(ERR_PATH, 'r') as f:
+    for line in f.readlines():
+        if not line:
+            continue
+
+        errData = line.split(' ')
+        fileName = errData[0].strip()
+        fileURL = errData[1].strip()
+        try:
+            savePath = f'{ILLUST_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
+            ext = os.path.splitext(fileURL)[-1]
+            savePath = GetNewFilePath(savePath, ext)
+            wget.download(fileURL, savePath)
+        except:
+            err_text += line
+
+with open(ERR_PATH, 'w') as f:
+    f.write(err_text)
+
+print('-----\n')
+
+
+# Crawling
 
 if not os.path.exists(TWEET_PATH):
     os.mkdir(TWEET_PATH)
@@ -132,6 +175,8 @@ print(f'\nTotal : {tweetCount}\n')
 print(f'Illust : {len(illustration)}\n\n')
 
 
+# Download Illust
+
 if not os.path.exists(ILLUST_PATH):
     os.mkdir(ILLUST_PATH)
 
@@ -150,28 +195,24 @@ for illust in illustration:
         if not os.path.exists(savePath):
             os.mkdir(savePath)
 
-        ext = os.path.splitext(illustURL)[1]
+        ext = os.path.splitext(illustURL)[-1]
         savePath += f'/{illustName}'
 
-        if os.path.exists(f'{savePath}{ext}'):
-            dupCount = 1
-            while True:
-                if not os.path.exists(f'{savePath}_{dupCount}{ext}'):
-                    savePath += f'_{dupCount}'
-                    break
-                else:
-                    dupCount += 1
-
-        savePath += ext
+        savePath = GetNewFilePath(savePath, ext)
 
         # print(f'{savePath} : {illustURL}')
         wget.download(illustURL, savePath)
     except:
-        err_text += f'{illust[0]}-{illust[1]}\n'
+        err_text += f'{illust[0]} {illust[1]}\n'
+
+
+# Error
 
 with open(ERR_PATH, 'a+') as f:
     f.write(err_text)
 
+
+# ID Update
 
 if latestID is not None:
     savedLatestID = None
