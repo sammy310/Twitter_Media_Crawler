@@ -78,6 +78,7 @@ while True:
 
     tweetCount += len(tweets)
     
+    tweetData = {}
 
     for t in tweets:
         print(f'USER : {t.user.name}')
@@ -104,18 +105,23 @@ while True:
         print('-----\n')
 
         createdDate = createAt.strftime("%Y%m%d")
-        tweetPath = f'{TWEET_PATH}/{createdDate[:6]}'
+        if not createdDate in tweetData:
+            tweetData[createdDate] = {}
+        tweetData[createdDate].update(tweet)
+
+    for tweetDate in tweetData.keys():
+        tweetPath = f'{TWEET_PATH}/{tweetDate[:6]}'
         if not os.path.exists(tweetPath):
             os.mkdir(tweetPath)
 
-        tweetPath += f'/{createdDate[:8]}.json'
+        tweetPath += f'/{tweetDate}.json'
         if not os.path.exists(tweetPath):
             with open(tweetPath, 'w', -1, 'utf-8') as f:
-                json.dump(tweet, f, indent=4, ensure_ascii=False)
+                json.dump(tweetData[tweetDate], f, indent=4, ensure_ascii=False)
         else:
             with open(tweetPath, 'r+', -1, 'utf-8') as f:
                 data = json.load(f)
-                data.update(tweet)
+                data.update(tweetData[tweetDate])
                 f.seek(0)
                 json.dump(data, f, indent=4, ensure_ascii=False)
 
@@ -129,6 +135,8 @@ print(f'Illust : {len(illustration)}\n\n')
 if not os.path.exists(ILLUST_PATH):
     os.mkdir(ILLUST_PATH)
 
+
+err_text = ""
 
 for illust in illustration:
     try:
@@ -159,8 +167,10 @@ for illust in illustration:
         # print(f'{savePath} : {illustURL}')
         wget.download(illustURL, savePath)
     except:
-        with open(ERR_PATH, 'a+') as f:
-            f.write(f'{illust[0]} - {illust[1]}\n')
+        err_text += f'{illust[0]}-{illust[1]}\n'
+
+with open(ERR_PATH, 'a+') as f:
+    f.write(err_text)
 
 
 if latestID is not None:
