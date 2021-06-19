@@ -36,6 +36,8 @@ TWEET_PATH = 'tweet'
 
 ERR_PATH = 'err.txt'
 
+CURRENT_DATE = datetime.datetime.today().strftime('%Y%m')
+VIDEO_JSON_PATH = f'{VIDEO_PATH}/{CURRENT_DATE}/{CURRENT_DATE}.json'
 
 load_dotenv()
 CONSUMER_KEY = os.getenv('API_KEY')
@@ -102,6 +104,13 @@ if not os.path.exists(TWEET_PATH):
     os.mkdir(TWEET_PATH)
 
 
+videoJson = None
+if os.path.exists(VIDEO_JSON_PATH):
+    with open(VIDEO_JSON_PATH, 'r', -1, 'utf-8') as f:
+        videoJson = json.load(f)
+else:
+    videoJson = dict()
+
 while True:
     tweets = None
     try:
@@ -131,15 +140,16 @@ while True:
     tweetData = {}
 
     for t in tweets:
-        print(f'USER : {t.user.name}')
         print(f'ID : {t.id}')
+        print(f'USER_ID : {t.user.id}')
+        print(f'USER : {t.user.name}')
         print(f'MSG : {t.text}')
         createAt = t.created_at + datetime.timedelta(hours=9)
         print(f'create : {createAt}')
         formatedDate = createAt.strftime("%Y%m%d_%H%M%S")
 
         tweetDictKey = f'{t.id}_{formatedDate}'
-        tweet = {tweetDictKey: {'user_name': t.user.name, 'screen_name': t.user.screen_name, 'created': str(createAt)}}
+        tweet = {tweetDictKey: {'user_id': t.user.id_str, 'user_name': t.user.name, 'screen_name': t.user.screen_name, 'created': str(createAt)}}
         if hasattr(t, 'full_text'):
             tweet[tweetDictKey]['message'] = t.full_text
         else:
@@ -157,11 +167,23 @@ while True:
                                 videoURL = info['url']
                     videoURL = videoURL.split('?')[0]
 
-                    video.append([formatedDate, videoURL])
                     print(f'video : {videoURL}')
-                    if not 'media' in tweet[tweetDictKey]:
-                        tweet[tweetDictKey]['media'] = list()
-                    tweet[tweetDictKey]['media'].append(videoURL)
+
+                    # Video Check
+                    if media['id_str'] in videoJson:
+                        if not 'dup_media' in tweet[tweetDictKey]:
+                            tweet[tweetDictKey]['dup_media'] = dict()
+                        tweet[tweetDictKey]['dup_media'].update({media['id_str']: videoURL})
+                    else:
+                        video.append([formatedDate, videoURL])
+                        if 'source_user_id' in media:
+                            videoJson.update({media['id_str']: {'user_id': media['source_user_id'], 'user_name': media['additional_media_info']['source_user']['name'], 'user_screen_name': media['additional_media_info']['source_user']['screen_name'], 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
+                        else:
+                            videoJson.update({media['id_str']: {'user_id': t.user.id, 'user_name': t.user.name, 'user_screen_name': t.user.screen_name, 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
+
+                        if not 'media' in tweet[tweetDictKey]:
+                            tweet[tweetDictKey]['media'] = list()
+                        tweet[tweetDictKey]['media'].append(videoURL)
                 else:
                 # if media['type'] == 'photo':
                     illustration.append([formatedDate, media['media_url']])
@@ -259,6 +281,12 @@ for v in video:
 
 with open(ERR_PATH, 'a+') as f:
     f.write(err_text)
+
+
+# Video Check Json
+
+with open(VIDEO_JSON_PATH, 'w', -1, 'utf-8') as f:
+    json.dump(videoJson, f, indent=4, ensure_ascii=False)
 
 
 # ID Update
