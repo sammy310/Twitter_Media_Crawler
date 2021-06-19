@@ -127,6 +127,7 @@ dmypy.json
 
 # Datas
 illust/
+video/
 tweet/
 last_id.txt
 since_id.txt

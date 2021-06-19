@@ -30,6 +30,7 @@ def GetNewFilePath(filePath, ext):
 SINCE_ID_PATH = 'since_id.txt'
 LAST_ID_PATH = 'last_id.txt'
 ILLUST_PATH = 'illust'
+VIDEO_PATH = 'video'
 
 TWEET_PATH = 'tweet'
 
@@ -60,6 +61,7 @@ latestID = None
 lastID = None
 
 illustration = []
+video = []
 tweetCount = 0
 
 
@@ -76,7 +78,12 @@ with open(ERR_PATH, 'r') as f:
         fileName = errData[0].strip()
         fileURL = errData[1].strip()
         try:
-            savePath = f'{ILLUST_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
+            savePath = None
+            if (fileName[0] == '.'):
+                fileName = fileName[1:]
+                savePath = f'{VIDEO_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
+            else:
+                savePath = f'{ILLUST_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
             ext = os.path.splitext(fileURL)[-1]
             savePath = GetNewFilePath(savePath, ext)
             wget.download(fileURL, savePath)
@@ -139,12 +146,30 @@ while True:
             tweet[tweetDictKey]['message'] = t.text
 
         if hasattr(t, 'extended_entities'):
-            tweet[tweetDictKey]['illust'] = list()
             for media in t.extended_entities['media']:
-                if media['type'] == 'photo':
+                if media['type'] == 'video':
+                    maxBitrate = 0
+                    videoURL = None
+                    for info in media['video_info']['variants']:
+                        if 'bitrate' in info:
+                            if maxBitrate < info['bitrate']:
+                                maxBitrate = info['bitrate']
+                                videoURL = info['url']
+                    videoURL = videoURL.split('?')[0]
+
+                    video.append([formatedDate, videoURL])
+                    print(f'video : {videoURL}')
+                    if not 'media' in tweet[tweetDictKey]:
+                        tweet[tweetDictKey]['media'] = list()
+                    tweet[tweetDictKey]['media'].append(videoURL)
+                else:
+                # if media['type'] == 'photo':
                     illustration.append([formatedDate, media['media_url']])
                     print(f'pic : {media["media_url"]}')
+                    if not 'illust' in tweet[tweetDictKey]:
+                        tweet[tweetDictKey]['illust'] = list()
                     tweet[tweetDictKey]['illust'].append(media['media_url'])
+
         print('-----\n')
 
         createdDate = createAt.strftime("%Y%m%d")
@@ -172,13 +197,16 @@ while True:
 
 
 print(f'\nTotal : {tweetCount}\n')
-print(f'Illust : {len(illustration)}\n\n')
+print(f'Illust : {len(illustration)}\n')
+print(f'Video : {len(video)}\n\n')
 
 
 # Download Illust
 
 if not os.path.exists(ILLUST_PATH):
     os.mkdir(ILLUST_PATH)
+if not os.path.exists(VIDEO_PATH):
+    os.mkdir(VIDEO_PATH)
 
 
 err_text = ""
@@ -204,6 +232,27 @@ for illust in illustration:
         wget.download(illustURL, savePath)
     except:
         err_text += f'{illust[0]} {illust[1]}\n'
+
+for v in video:
+    try:
+        vName = v[0]
+        vURL = v[1]
+        savePath = f'{VIDEO_PATH}/{vName[:6]}'
+        if not os.path.exists(savePath):
+            os.mkdir(savePath)
+
+        savePath += f'/{vName[:8]}'
+        if not os.path.exists(savePath):
+            os.mkdir(savePath)
+
+        ext = os.path.splitext(vURL)[-1]
+        savePath += f'/{vName}'
+
+        savePath = GetNewFilePath(savePath, ext)
+
+        wget.download(vURL, savePath)
+    except:
+        err_text += f'.{v[0]} {v[1]}\n'
 
 
 # Error
