@@ -177,9 +177,9 @@ while True:
                     else:
                         video.append([formatedDate, videoURL])
                         if 'source_user_id' in media:
-                            videoJson.update({media['id_str']: {'user_id': media['source_user_id'], 'user_name': media['additional_media_info']['source_user']['name'], 'user_screen_name': media['additional_media_info']['source_user']['screen_name'], 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
+                            videoJson.update({media['id_str']: {'user_id': media['source_user_id'], 'user_name': media['additional_media_info']['source_user']['name'], 'user_screen_name': media['additional_media_info']['source_user']['screen_name'], 'created': str(createAt), 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
                         else:
-                            videoJson.update({media['id_str']: {'user_id': t.user.id, 'user_name': t.user.name, 'user_screen_name': t.user.screen_name, 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
+                            videoJson.update({media['id_str']: {'user_id': t.user.id, 'user_name': t.user.name, 'user_screen_name': t.user.screen_name, 'created': str(createAt), 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
 
                         if not 'media' in tweet[tweetDictKey]:
                             tweet[tweetDictKey]['media'] = list()
