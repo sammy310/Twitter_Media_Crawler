@@ -156,6 +156,7 @@ while True:
             tweet[tweetDictKey]['message'] = t.text
 
         if hasattr(t, 'extended_entities'):
+            isMediaDuplicate = False
             for media in t.extended_entities['media']:
                 if media['type'] == 'video':
                     maxBitrate = 0
@@ -170,10 +171,12 @@ while True:
                     print(f'video : {videoURL}')
 
                     # Video Check
-                    if media['id_str'] in videoJson:
-                        if not 'dup_media' in tweet[tweetDictKey]:
-                            tweet[tweetDictKey]['dup_media'] = dict()
-                        tweet[tweetDictKey]['dup_media'].update({media['id_str']: videoURL})
+                    if media['id_str'] in videoJson: # Duplicated
+                        isMediaDuplicate = True
+                        break
+                        # if not 'dup_media' in tweet[tweetDictKey]:
+                        #     tweet[tweetDictKey]['dup_media'] = dict()
+                        # tweet[tweetDictKey]['dup_media'].update({media['id_str']: videoURL})
                     else:
                         video.append([formatedDate, videoURL])
                         if 'source_user_id' in media:
@@ -191,6 +194,9 @@ while True:
                     if not 'illust' in tweet[tweetDictKey]:
                         tweet[tweetDictKey]['illust'] = list()
                     tweet[tweetDictKey]['illust'].append(media['media_url'])
+            
+            if isMediaDuplicate:
+                continue
 
         print('-----\n')
 
