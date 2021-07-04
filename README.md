@@ -1,5 +1,5 @@
-# Twitter Illustration Crawler
-### Get Images From your Twitter's Timeline
+# Twitter Media Crawler
+### Get Media(Image, Gif, Video) From your Twitter's Timeline
 
 ---
 
@@ -22,16 +22,16 @@ ACCESS_TOKEN_SECRET=
 
 ## Result
 ```
-TwitterIllustrationCrawler
+TwitterMediaCrawler
 │  .env
 │  .gitattributes
 │  .gitignore
-│  illustrationCrawler.py
+│  twitterMediaCrawler.py
 │  last_id.txt
 │  LICENSE
 │  since_id.txt
 │  
-├─illust
+├─photo
 │  └─202101
 │      ├─20210111
 │      │      20210111_000421.jpg
