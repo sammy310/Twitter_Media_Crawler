@@ -16,13 +16,19 @@ SINCE_ID_PATH = 'since_id.txt'
 LAST_ID_PATH = 'last_id.txt'
 ILLUST_PATH = 'illust'
 VIDEO_PATH = 'video'
+DATA_PATH = 'data'
 
 TWEET_PATH = 'tweet'
 
 ERR_PATH = 'err.txt'
 
-CURRENT_DATE = datetime.datetime.today().strftime('%Y%m')
-VIDEO_JSON_PATH = f'{VIDEO_PATH}/{CURRENT_DATE}/{CURRENT_DATE}.json'
+UTC_TIME = 9
+
+UPDATE_KEY = 'update'
+DATA_KEY = 'data'
+
+ILLUST_KEY_GENERATE_SIZE = 16
+VIDEO_KEY_GENERATE_SIZE = 17
 
 load_dotenv()
 CONSUMER_KEY = os.getenv('API_KEY')
@@ -36,6 +42,8 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
 api = tweepy.API(auth)
 
+ILLUST_DATA_PATH = f'{ILLUST_PATH}/{DATA_PATH}'
+VIDEO_DATA_PATH = f'{VIDEO_PATH}/{DATA_PATH}'
 
 class IllustCrawler:
     def __init__(self):
@@ -49,8 +57,10 @@ class IllustCrawler:
         self.image = {}
         self.video = []
         self.tweetCount = 0
+        self.dupCount = 0
 
-        self.videoJson = None
+        self.illustData = {}
+        self.videoData = {}
 
 
         if os.path.exists(SINCE_ID_PATH):
@@ -59,13 +69,15 @@ class IllustCrawler:
 
         if not os.path.exists(TWEET_PATH):
             os.mkdir(TWEET_PATH)
-
-
-        if os.path.exists(VIDEO_JSON_PATH):
-            with open(VIDEO_JSON_PATH, 'r', -1, 'utf-8') as f:
-                self.videoJson = json.load(f)
-        else:
-            self.videoJson = dict()
+        
+        if not os.path.exists(ILLUST_PATH):
+            os.mkdir(ILLUST_PATH)
+        if not os.path.exists(ILLUST_DATA_PATH):
+            os.mkdir(ILLUST_DATA_PATH)
+        if not os.path.exists(VIDEO_PATH):
+            os.mkdir(VIDEO_PATH)
+        if not os.path.exists(VIDEO_DATA_PATH):
+            os.mkdir(VIDEO_DATA_PATH)
 
 
     def GetNewFilePath(self, filePath, ext):
@@ -85,7 +97,8 @@ class IllustCrawler:
         self.ErrorCheck()
         self.GetTweet()
         self.DownloadData()
-        self.UpdateVideoCheck()
+        self.SaveIllustData()
+        self.SaveVideoData()
         self.UpdateID()
 
 
@@ -154,25 +167,34 @@ class IllustCrawler:
             self.tweetCount += len(tweets)
 
             for t in tweets:
-                print(f'ID : {t.id}')
-                print(f'USER_ID : {t.user.id}')
-                print(f'USER : {t.user.name}')
-                print(f'MSG : {t.text}')
-                createAt = t.created_at + datetime.timedelta(hours=9)
+                tw = t
+                if hasattr(t, 'retweeted_status'):
+                    tw = t.retweeted_status
+                if self.IsIllustExists(tw.id_str) or self.IsVideoExists(tw.id_str):
+                    self.dupCount += 1
+                    continue
+
+                print(f'ID : {tw.id}')
+                print(f'USER_ID : {tw.user.id}')
+                print(f'USER : {tw.user.name}')
+                print(f'MSG : {tw.text}')
+                createAt = self.GetTweetDate(tw.created_at)
                 print(f'create : {createAt}')
                 formatedDate = createAt.strftime("%Y%m%d_%H%M%S")
 
-                tweetDictKey = f'{t.id}_{formatedDate}'
-                tweet = {tweetDictKey: {'user_id': t.user.id_str, 'user_name': t.user.name, 'screen_name': t.user.screen_name, 'created': str(createAt)}}
-                if hasattr(t, 'full_text'):
-                    tweet[tweetDictKey]['message'] = t.full_text
+                tweetDictKey = f'{tw.id}_{formatedDate}'
+                tweet = {tweetDictKey: {'user_id': tw.user.id_str, 'user_name': tw.user.name, 'screen_name': tw.user.screen_name, 'created': str(createAt)}}
+                if hasattr(tw, 'full_text'):
+                    tweet[tweetDictKey]['message'] = tw.full_text
                 else:
-                    tweet[tweetDictKey]['message'] = t.text
+                    tweet[tweetDictKey]['message'] = tw.text
+                
 
-                if hasattr(t, 'extended_entities'):
-                    isMediaDuplicate = False
-                    for media in t.extended_entities['media']:
+                if hasattr(tw, 'extended_entities'):
+                    isVideo = False
+                    for media in tw.extended_entities['media']:
                         if media['type'] == 'video':
+                            isVideo = True
                             maxBitrate = 0
                             videoURL = None
                             for info in media['video_info']['variants']:
@@ -183,34 +205,23 @@ class IllustCrawler:
                             videoURL = videoURL.split('?')[0]
 
                             print(f'video : {videoURL}')
+                            self.video.append([formatedDate, videoURL])
 
-                            # Video Check
-                            if media['id_str'] in self.videoJson: # Duplicated
-                                isMediaDuplicate = True
-                                break
-                                # if not 'dup_media' in tweet[tweetDictKey]:
-                                #     tweet[tweetDictKey]['dup_media'] = dict()
-                                # tweet[tweetDictKey]['dup_media'].update({media['id_str']: videoURL})
-                            else:
-                                self.video.append([formatedDate, videoURL])
-                                if 'source_user_id' in media:
-                                    self.videoJson.update({media['id_str']: {'user_id': media['source_user_id'], 'user_name': media['additional_media_info']['source_user']['name'], 'user_screen_name': media['additional_media_info']['source_user']['screen_name'], 'created': str(createAt), 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
-                                else:
-                                    self.videoJson.update({media['id_str']: {'user_id': t.user.id, 'user_name': t.user.name, 'user_screen_name': t.user.screen_name, 'created': str(createAt), 'media_url': media['media_url_https'], 'url': media['url'], 'expanded_url': media['expanded_url'], 'video_info': media['video_info']['variants']}})
-
-                                if not 'media' in tweet[tweetDictKey]:
-                                    tweet[tweetDictKey]['media'] = list()
-                                tweet[tweetDictKey]['media'].append(videoURL)
+                            if not 'media' in tweet[tweetDictKey]:
+                                tweet[tweetDictKey]['media'] = list()
+                            tweet[tweetDictKey]['media'].append(videoURL)
                         else:
-                        # if media['type'] == 'photo':
-                            self.illustration.append([formatedDate, media['media_url']])
                             print(f'pic : {media["media_url"]}')
+                            self.illustration.append([formatedDate, media['media_url']])
+
                             if not 'illust' in tweet[tweetDictKey]:
                                 tweet[tweetDictKey]['illust'] = list()
                             tweet[tweetDictKey]['illust'].append(media['media_url'])
                     
-                    if isMediaDuplicate:
-                        continue
+                    if isVideo:
+                        self.UpdateVideoData(tw)
+                    else:
+                        self.UpdateIllustData(tw)
 
                 print('-----\n')
 
@@ -239,6 +250,7 @@ class IllustCrawler:
                     json.dump(data, f, indent=4, ensure_ascii=False)
 
         print(f'\nTotal : {self.tweetCount}\n')
+        print(f'Duplicated : {self.dupCount}\n')
         print(f'Illust : {len(self.illustration)}\n')
         print(f'Video : {len(self.video)}\n\n')
 
@@ -270,7 +282,6 @@ class IllustCrawler:
 
                 savePath = self.GetNewFilePath(savePath, ext)
 
-                # print(f'{savePath} : {illustURL}')
                 wget.download(illustURL, savePath)
             except:
                 err_text += f'{illust[0]} {illust[1]}\n'
@@ -303,10 +314,6 @@ class IllustCrawler:
         with open(ERR_PATH, 'a+') as f:
             f.write(err_text)
     
-
-    def UpdateVideoCheck(self):
-        with open(VIDEO_JSON_PATH, 'w', -1, 'utf-8') as f:
-            json.dump(self.videoJson, f, indent=4, ensure_ascii=False)
     
 
     def UpdateID(self):
@@ -329,7 +336,98 @@ class IllustCrawler:
             if savedLastID is None or savedLastID > self.lastID:
                 with open(LAST_ID_PATH, 'w') as f:
                     f.write(str(self.lastID))
+    
 
+    def GetTweetDate(self, created_at):
+        return created_at + datetime.timedelta(hours=UTC_TIME)
+
+    def GetIllustKey(self, tweetID):
+        return tweetID[:-ILLUST_KEY_GENERATE_SIZE]
+    
+    def GetIllustDataPath(self, illustKey):
+        illustDataPath = f'{ILLUST_DATA_PATH}/{illustKey[:-1]}'
+        if not os.path.exists(illustDataPath):
+            os.mkdir(illustDataPath)
+        illustDataPath += f'/{illustKey}.json'
+        return illustDataPath
+    
+    def IsIllustExists(self, tweetID):
+        illustKey = self.GetIllustKey(tweetID)
+        if not illustKey in self.illustData:
+            self.illustData[illustKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+
+            illustDataPath = self.GetIllustDataPath(illustKey)
+            if os.path.exists(illustDataPath):
+                with open(illustDataPath, 'r', -1, 'utf-8') as f:
+                    self.illustData[illustKey][DATA_KEY] = json.load(f)
+        
+        return tweetID in self.illustData[illustKey][DATA_KEY]
+    
+    def UpdateIllustData(self, tweet):
+        illustKey = self.GetIllustKey(tweet.id_str)
+        data = {tweet.id_str: {'user_id': tweet.user.id, 'user_name': tweet.user.name, 'user_screen_name': tweet.user.screen_name, 'created': str(self.GetTweetDate(tweet.created_at))}}
+        
+        data[tweet.id_str]['url'] = tweet.extended_entities['media'][0]['url']
+        data[tweet.id_str]['expanded_url'] = tweet.extended_entities['media'][0]['expanded_url']
+        data[tweet.id_str]['media'] = []
+        for media in tweet.extended_entities['media']:
+            data[tweet.id_str]['media'].append({'media_id': media['id'], 'media_url': media['media_url_https']})
+        
+        if not illustKey in self.illustData:
+            self.illustData[illustKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+        
+        self.illustData[illustKey][UPDATE_KEY] = True
+        self.illustData[illustKey][DATA_KEY].update(data)
+
+    def GetVideoKey(self, tweetID):
+        return tweetID[:-VIDEO_KEY_GENERATE_SIZE]
+    
+    def GetVideoDataPath(self, videoKey):
+        return f'{VIDEO_DATA_PATH}/{videoKey}.json'
+    
+    def IsVideoExists(self, tweetID):
+        videoKey = self.GetVideoKey(tweetID)
+        if not videoKey in self.videoData:
+            self.videoData[videoKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+
+            videoDataPath = self.GetVideoDataPath(videoKey)
+            if os.path.exists(videoDataPath):
+                with open(videoDataPath, 'r', -1, 'utf-8') as f:
+                    self.videoData[videoKey][DATA_KEY] = json.load(f)
+        
+        return tweetID in self.videoData[videoKey][DATA_KEY]
+    
+    def UpdateVideoData(self, tweet):
+        videoKey = self.GetVideoKey(tweet.id_str)
+        data = {tweet.id_str: {'user_id': tweet.user.id, 'user_name': tweet.user.name, 'user_screen_name': tweet.user.screen_name, 'created': str(self.GetTweetDate(tweet.created_at))}}
+        
+        media = tweet.extended_entities['media'][0]
+        data[tweet.id_str]['media_id'] = media['id']
+        data[tweet.id_str]['url'] = media['url']
+        data[tweet.id_str]['expanded_url'] = media['expanded_url']
+        data[tweet.id_str]['media_url'] = media['media_url_https']
+        data[tweet.id_str]['video_info'] = media['video_info']['variants']
+
+        if not videoKey in self.videoData:
+            self.videoData[videoKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+        
+        self.videoData[videoKey][UPDATE_KEY] = True
+        self.videoData[videoKey][DATA_KEY].update(data)
+        
+
+    def SaveIllustData(self):
+        for illustKey in self.illustData:
+            if self.illustData[illustKey][UPDATE_KEY]:
+                illustDataPath = self.GetIllustDataPath(illustKey)
+                with open(illustDataPath, 'w', -1, 'utf-8') as f:
+                    json.dump(self.illustData[illustKey][DATA_KEY], f, indent=4, ensure_ascii=False)
+
+    def SaveVideoData(self):
+        for videoKey in self.videoData:
+            if self.videoData[videoKey][UPDATE_KEY]:
+                videoDataPath = self.GetVideoDataPath(videoKey)
+                with open(videoDataPath, 'w', -1, 'utf-8') as f:
+                    json.dump(self.videoData[videoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
 
 IllustCrawler().StartCrawler()
