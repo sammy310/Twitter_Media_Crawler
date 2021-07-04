@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# illustrationCrawler.py
+# twitterMediaCrawler.py
 # sammy310
 
 import tweepy
@@ -14,7 +14,7 @@ import datetime
 
 SINCE_ID_PATH = 'since_id.txt'
 LAST_ID_PATH = 'last_id.txt'
-ILLUST_PATH = 'illust'
+PHOTO_PATH = 'photo'
 VIDEO_PATH = 'video'
 DATA_PATH = 'data'
 
@@ -27,7 +27,7 @@ UTC_TIME = 9
 UPDATE_KEY = 'update'
 DATA_KEY = 'data'
 
-ILLUST_KEY_GENERATE_SIZE = 16
+PHOTO_KEY_GENERATE_SIZE = 16
 VIDEO_KEY_GENERATE_SIZE = 17
 
 load_dotenv()
@@ -42,7 +42,7 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
 api = tweepy.API(auth)
 
-ILLUST_DATA_PATH = f'{ILLUST_PATH}/{DATA_PATH}'
+PHOTO_DATA_PATH = f'{PHOTO_PATH}/{DATA_PATH}'
 VIDEO_DATA_PATH = f'{VIDEO_PATH}/{DATA_PATH}'
 
 class IllustCrawler:
@@ -53,13 +53,12 @@ class IllustCrawler:
         self.latestID = None
         self.lastID = None
 
-        self.illustration = []
-        self.image = {}
+        self.photo = []
         self.video = []
         self.tweetCount = 0
         self.dupCount = 0
 
-        self.illustData = {}
+        self.photoData = {}
         self.videoData = {}
 
 
@@ -70,10 +69,10 @@ class IllustCrawler:
         if not os.path.exists(TWEET_PATH):
             os.mkdir(TWEET_PATH)
         
-        if not os.path.exists(ILLUST_PATH):
-            os.mkdir(ILLUST_PATH)
-        if not os.path.exists(ILLUST_DATA_PATH):
-            os.mkdir(ILLUST_DATA_PATH)
+        if not os.path.exists(PHOTO_PATH):
+            os.mkdir(PHOTO_PATH)
+        if not os.path.exists(PHOTO_DATA_PATH):
+            os.mkdir(PHOTO_DATA_PATH)
         if not os.path.exists(VIDEO_PATH):
             os.mkdir(VIDEO_PATH)
         if not os.path.exists(VIDEO_DATA_PATH):
@@ -97,7 +96,7 @@ class IllustCrawler:
         self.ErrorCheck()
         self.GetTweet()
         self.DownloadData()
-        self.SaveIllustData()
+        self.SavePhotoData()
         self.SaveVideoData()
         self.UpdateID()
 
@@ -124,7 +123,7 @@ class IllustCrawler:
                         fileName = fileName[1:]
                         savePath = f'{VIDEO_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
                     else:
-                        savePath = f'{ILLUST_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
+                        savePath = f'{PHOTO_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
                     ext = os.path.splitext(fileURL)[-1]
                     savePath = self.GetNewFilePath(savePath, ext)
                     wget.download(fileURL, savePath)
@@ -170,7 +169,7 @@ class IllustCrawler:
                 tw = t
                 if hasattr(t, 'retweeted_status'):
                     tw = t.retweeted_status
-                if self.IsIllustExists(tw.id_str) or self.IsVideoExists(tw.id_str):
+                if self.IsPhotoExists(tw.id_str) or self.IsVideoExists(tw.id_str):
                     self.dupCount += 1
                     continue
 
@@ -212,16 +211,16 @@ class IllustCrawler:
                             tweet[tweetDictKey]['media'].append(videoURL)
                         else:
                             print(f'pic : {media["media_url"]}')
-                            self.illustration.append([formatedDate, media['media_url']])
+                            self.photo.append([formatedDate, media['media_url']])
 
-                            if not 'illust' in tweet[tweetDictKey]:
-                                tweet[tweetDictKey]['illust'] = list()
-                            tweet[tweetDictKey]['illust'].append(media['media_url'])
+                            if not 'photo' in tweet[tweetDictKey]:
+                                tweet[tweetDictKey]['photo'] = list()
+                            tweet[tweetDictKey]['photo'].append(media['media_url'])
                     
                     if isVideo:
                         self.UpdateVideoData(tw)
                     else:
-                        self.UpdateIllustData(tw)
+                        self.UpdatePhotoData(tw)
 
                 print('-----\n')
 
@@ -251,40 +250,40 @@ class IllustCrawler:
 
         print(f'\nTotal : {self.tweetCount}\n')
         print(f'Duplicated : {self.dupCount}\n')
-        print(f'Illust : {len(self.illustration)}\n')
+        print(f'Photo : {len(self.photo)}\n')
         print(f'Video : {len(self.video)}\n\n')
 
 
     def DownloadData(self):
-        if not os.path.exists(ILLUST_PATH):
-            os.mkdir(ILLUST_PATH)
+        if not os.path.exists(PHOTO_PATH):
+            os.mkdir(PHOTO_PATH)
         if not os.path.exists(VIDEO_PATH):
             os.mkdir(VIDEO_PATH)
 
 
         err_text = ""
 
-        print("Start Illust Download")
-        for illust in self.illustration:
+        print("Start Photo Download")
+        for image in self.photo:
             try:
-                illustName = illust[0]
-                illustURL = illust[1]
-                savePath = f'{ILLUST_PATH}/{illustName[:6]}'
+                photoName = image[0]
+                photoURL = image[1]
+                savePath = f'{PHOTO_PATH}/{photoName[:6]}'
                 if not os.path.exists(savePath):
                     os.mkdir(savePath)
 
-                savePath += f'/{illustName[:8]}'
+                savePath += f'/{photoName[:8]}'
                 if not os.path.exists(savePath):
                     os.mkdir(savePath)
 
-                ext = os.path.splitext(illustURL)[-1]
-                savePath += f'/{illustName}'
+                ext = os.path.splitext(photoURL)[-1]
+                savePath += f'/{photoName}'
 
                 savePath = self.GetNewFilePath(savePath, ext)
 
-                wget.download(illustURL, savePath)
+                wget.download(photoURL, savePath)
             except:
-                err_text += f'{illust[0]} {illust[1]}\n'
+                err_text += f'{image[0]} {image[1]}\n'
 
         print("\n\nStart Video Download")
         for v in self.video:
@@ -341,30 +340,30 @@ class IllustCrawler:
     def GetTweetDate(self, created_at):
         return created_at + datetime.timedelta(hours=UTC_TIME)
 
-    def GetIllustKey(self, tweetID):
-        return tweetID[:-ILLUST_KEY_GENERATE_SIZE]
+    def GetPhotoKey(self, tweetID):
+        return tweetID[:-PHOTO_KEY_GENERATE_SIZE]
     
-    def GetIllustDataPath(self, illustKey):
-        illustDataPath = f'{ILLUST_DATA_PATH}/{illustKey[:-1]}'
-        if not os.path.exists(illustDataPath):
-            os.mkdir(illustDataPath)
-        illustDataPath += f'/{illustKey}.json'
-        return illustDataPath
+    def GetPhotoDataPath(self, photoKey):
+        photoDataPath = f'{PHOTO_DATA_PATH}/{photoKey[:-1]}'
+        if not os.path.exists(photoDataPath):
+            os.mkdir(photoDataPath)
+        photoDataPath += f'/{photoKey}.json'
+        return photoDataPath
     
-    def IsIllustExists(self, tweetID):
-        illustKey = self.GetIllustKey(tweetID)
-        if not illustKey in self.illustData:
-            self.illustData[illustKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+    def IsPhotoExists(self, tweetID):
+        photoKey = self.GetPhotoKey(tweetID)
+        if not photoKey in self.photoData:
+            self.photoData[photoKey] = {UPDATE_KEY: False, DATA_KEY: {}}
 
-            illustDataPath = self.GetIllustDataPath(illustKey)
-            if os.path.exists(illustDataPath):
-                with open(illustDataPath, 'r', -1, 'utf-8') as f:
-                    self.illustData[illustKey][DATA_KEY] = json.load(f)
+            photoDataPath = self.GetPhotoDataPath(photoKey)
+            if os.path.exists(photoDataPath):
+                with open(photoDataPath, 'r', -1, 'utf-8') as f:
+                    self.photoData[photoKey][DATA_KEY] = json.load(f)
         
-        return tweetID in self.illustData[illustKey][DATA_KEY]
+        return tweetID in self.photoData[photoKey][DATA_KEY]
     
-    def UpdateIllustData(self, tweet):
-        illustKey = self.GetIllustKey(tweet.id_str)
+    def UpdatePhotoData(self, tweet):
+        photoKey = self.GetPhotoKey(tweet.id_str)
         data = {tweet.id_str: {'user_id': tweet.user.id, 'user_name': tweet.user.name, 'user_screen_name': tweet.user.screen_name, 'created': str(self.GetTweetDate(tweet.created_at))}}
         
         data[tweet.id_str]['url'] = tweet.extended_entities['media'][0]['url']
@@ -373,11 +372,11 @@ class IllustCrawler:
         for media in tweet.extended_entities['media']:
             data[tweet.id_str]['media'].append({'media_id': media['id'], 'media_url': media['media_url_https']})
         
-        if not illustKey in self.illustData:
-            self.illustData[illustKey] = {UPDATE_KEY: False, DATA_KEY: {}}
+        if not photoKey in self.photoData:
+            self.photoData[photoKey] = {UPDATE_KEY: False, DATA_KEY: {}}
         
-        self.illustData[illustKey][UPDATE_KEY] = True
-        self.illustData[illustKey][DATA_KEY].update(data)
+        self.photoData[photoKey][UPDATE_KEY] = True
+        self.photoData[photoKey][DATA_KEY].update(data)
 
     def GetVideoKey(self, tweetID):
         return tweetID[:-VIDEO_KEY_GENERATE_SIZE]
@@ -415,12 +414,12 @@ class IllustCrawler:
         self.videoData[videoKey][DATA_KEY].update(data)
         
 
-    def SaveIllustData(self):
-        for illustKey in self.illustData:
-            if self.illustData[illustKey][UPDATE_KEY]:
-                illustDataPath = self.GetIllustDataPath(illustKey)
-                with open(illustDataPath, 'w', -1, 'utf-8') as f:
-                    json.dump(self.illustData[illustKey][DATA_KEY], f, indent=4, ensure_ascii=False)
+    def SavePhotoData(self):
+        for photoKey in self.photoData:
+            if self.photoData[photoKey][UPDATE_KEY]:
+                photoDataPath = self.GetPhotoDataPath(photoKey)
+                with open(photoDataPath, 'w', -1, 'utf-8') as f:
+                    json.dump(self.photoData[photoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
     def SaveVideoData(self):
         for videoKey in self.videoData:
