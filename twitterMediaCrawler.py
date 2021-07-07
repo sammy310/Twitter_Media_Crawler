@@ -242,10 +242,11 @@ class IllustCrawler:
                 with open(tweetPath, 'w', -1, 'utf-8') as f:
                     json.dump(tweetData[tweetDate], f, indent=4, ensure_ascii=False)
             else:
-                with open(tweetPath, 'r+', -1, 'utf-8') as f:
+                data = {}
+                with open(tweetPath, 'r', -1, 'utf-8') as f:
                     data = json.load(f)
-                    data.update(tweetData[tweetDate])
-                    f.seek(0)
+                data.update(tweetData[tweetDate])
+                with open(tweetPath, 'w', -1, 'utf-8') as f:
                     json.dump(data, f, indent=4, ensure_ascii=False)
 
         print(f'\nTotal : {self.tweetCount}\n')
