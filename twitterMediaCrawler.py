@@ -42,8 +42,8 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
 api = tweepy.API(auth)
 
-PHOTO_DATA_PATH = f'{PHOTO_PATH}/{DATA_PATH}'
-VIDEO_DATA_PATH = f'{VIDEO_PATH}/{DATA_PATH}'
+PHOTO_DATA_PATH = f'{PHOTO_PATH}/{PHOTO_PATH}_{DATA_PATH}'
+VIDEO_DATA_PATH = f'{VIDEO_PATH}/{VIDEO_PATH}_{DATA_PATH}'
 
 class IllustCrawler:
     def __init__(self):
