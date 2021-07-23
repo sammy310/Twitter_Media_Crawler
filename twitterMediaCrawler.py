@@ -27,8 +27,9 @@ UTC_TIME = 9
 UPDATE_KEY = 'update'
 DATA_KEY = 'data'
 
-PHOTO_KEY_GENERATE_SIZE = 16
-VIDEO_KEY_GENERATE_SIZE = 17
+MAX_SPLIT_DATA_SIZE = 17
+PHOTO_KEY_GENERATE_SIZE = 15
+VIDEO_KEY_GENERATE_SIZE = 16
 
 load_dotenv()
 CONSUMER_KEY = os.getenv('API_KEY')
@@ -345,9 +346,12 @@ class IllustCrawler:
         return tweetID[:-PHOTO_KEY_GENERATE_SIZE]
     
     def GetPhotoDataPath(self, photoKey):
-        photoDataPath = f'{PHOTO_DATA_PATH}/{photoKey[:-1]}'
-        if not os.path.exists(photoDataPath):
-            os.mkdir(photoDataPath)
+        photoDataPath = PHOTO_DATA_PATH
+        for splitSize in range(MAX_SPLIT_DATA_SIZE - PHOTO_KEY_GENERATE_SIZE, 0, -1):
+            photoDataPath += f'/{photoKey[:-splitSize]}'
+            if not os.path.exists(photoDataPath):
+                os.mkdir(photoDataPath)
+
         photoDataPath += f'/{photoKey}.json'
         return photoDataPath
     
@@ -383,7 +387,14 @@ class IllustCrawler:
         return tweetID[:-VIDEO_KEY_GENERATE_SIZE]
     
     def GetVideoDataPath(self, videoKey):
-        return f'{VIDEO_DATA_PATH}/{videoKey}.json'
+        videoDataPath = VIDEO_DATA_PATH
+        for splitSize in range(MAX_SPLIT_DATA_SIZE - VIDEO_KEY_GENERATE_SIZE, 0, -1):
+            videoDataPath += f'/{videoKey[:-splitSize]}'
+            if not os.path.exists(videoDataPath):
+                os.mkdir(videoDataPath)
+
+        videoDataPath += f'/{videoKey}.json'
+        return videoDataPath
     
     def IsVideoExists(self, tweetID):
         videoKey = self.GetVideoKey(tweetID)
