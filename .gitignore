@@ -128,7 +128,7 @@ dmypy.json
 # Datas
 photo/
 video/
-tweet/
+data/
 last_id.txt
 since_id.txt
 err.txt

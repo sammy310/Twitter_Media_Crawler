@@ -17,6 +17,7 @@ LAST_ID_PATH = 'last_id.txt'
 PHOTO_PATH = 'photo'
 VIDEO_PATH = 'video'
 DATA_PATH = 'data'
+DOWNLOAD_DATA_LIST_PATH = 'download_data'
 
 TWEET_PATH = 'tweet'
 
@@ -43,8 +44,10 @@ auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
 
 api = tweepy.API(auth)
 
-PHOTO_DATA_PATH = f'{PHOTO_PATH}/{PHOTO_PATH}_{DATA_PATH}'
-VIDEO_DATA_PATH = f'{VIDEO_PATH}/{VIDEO_PATH}_{DATA_PATH}'
+TWEET_PATH = f'{DATA_PATH}/{TWEET_PATH}'
+DOWNLOAD_DATA_LIST_PATH = f'{DATA_PATH}/{DOWNLOAD_DATA_LIST_PATH}'
+PHOTO_DATA_PATH = f'{DATA_PATH}/{PHOTO_PATH}_{DATA_PATH}'
+VIDEO_DATA_PATH = f'{DATA_PATH}/{VIDEO_PATH}_{DATA_PATH}'
 
 class IllustCrawler:
     def __init__(self):
@@ -66,6 +69,9 @@ class IllustCrawler:
         if os.path.exists(SINCE_ID_PATH):
             with open(SINCE_ID_PATH, 'r') as f:
                 self.sinceID = int(f.readline())
+        
+        if not os.path.exists(DATA_PATH):
+            os.mkdir(DATA_PATH)
 
         if not os.path.exists(TWEET_PATH):
             os.mkdir(TWEET_PATH)
@@ -93,10 +99,13 @@ class IllustCrawler:
         return (filePath + ext)
     
 
-    def StartCrawler(self):
+    def StartCrawler(self, isDownloadMedia):
         self.ErrorCheck()
         self.GetTweet()
-        self.DownloadData()
+        if isDownloadMedia:
+            self.DownloadData()
+        else:
+            self.SaveDownloadDataList()
         self.SavePhotoData()
         self.SaveVideoData()
         self.UpdateID()
@@ -315,6 +324,30 @@ class IllustCrawler:
         with open(ERR_PATH, 'a+') as f:
             f.write(err_text)
     
+
+    def SaveDownloadDataList(self):
+        if not os.path.exists(DOWNLOAD_DATA_LIST_PATH):
+            os.mkdir(DOWNLOAD_DATA_LIST_PATH)
+        
+        dataList = ''
+
+        for image in self.photo:
+            photoName = image[0]
+            photoURL = image[1]
+            
+            dataList += f'{image[0]} {image[1]}\n'
+
+        for v in self.video:
+            vName = v[0]
+            vURL = v[1]
+            
+            dataList += f'.{v[0]} {v[1]}\n'
+        
+        currentDate = datetime.datetime.now().strftime('%Y%m%d')
+        downloadDataListPath = f'{DOWNLOAD_DATA_LIST_PATH}/{currentDate}.txt'
+        
+        with open(downloadDataListPath, 'a+') as f:
+            f.write(dataList)
     
 
     def UpdateID(self):
@@ -441,4 +474,4 @@ class IllustCrawler:
                     json.dump(self.videoData[videoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
 
-IllustCrawler().StartCrawler()
+IllustCrawler().StartCrawler(False)
