@@ -125,10 +125,5 @@ dmypy.json
 .pyre/
 
 
-# Datas
-photo/
-video/
+# Data
 data/
-last_id.txt
-since_id.txt
-err.txt
