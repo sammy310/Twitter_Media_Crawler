@@ -32,6 +32,8 @@ MAX_SPLIT_DATA_SIZE = 17
 PHOTO_KEY_GENERATE_SIZE = 15
 VIDEO_KEY_GENERATE_SIZE = 16
 
+# -----=====-----=====-----=====-----=====-----=====-----=====
+
 load_dotenv()
 CONSUMER_KEY = os.getenv('API_KEY')
 CONSUMER_SECRET = os.getenv('API_SCRET_KEY')
@@ -81,12 +83,8 @@ class IllustCrawler:
         if not os.path.exists(TWEET_PATH):
             os.mkdir(TWEET_PATH)
         
-        if not os.path.exists(PHOTO_PATH):
-            os.mkdir(PHOTO_PATH)
         if not os.path.exists(PHOTO_DATA_PATH):
             os.mkdir(PHOTO_DATA_PATH)
-        if not os.path.exists(VIDEO_PATH):
-            os.mkdir(VIDEO_PATH)
         if not os.path.exists(VIDEO_DATA_PATH):
             os.mkdir(VIDEO_DATA_PATH)
 
