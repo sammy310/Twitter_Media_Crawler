@@ -56,7 +56,7 @@ DOWNLOAD_DATA_LIST_PATH = f'{DATA_PATH}/{DOWNLOAD_DATA_LIST_PATH}'
 PHOTO_DATA_PATH = f'{DATA_PATH}/{PHOTO_PATH}_{DATA_PATH}'
 VIDEO_DATA_PATH = f'{DATA_PATH}/{VIDEO_PATH}_{DATA_PATH}'
 
-class IllustCrawler:
+class TwitterMediaCrawler:
     def __init__(self):
         self.getCount = 200
 
@@ -481,4 +481,4 @@ class IllustCrawler:
                     json.dump(self.videoData[videoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
 
-IllustCrawler().StartCrawler(True)
+TwitterMediaCrawler().StartCrawler(True)
