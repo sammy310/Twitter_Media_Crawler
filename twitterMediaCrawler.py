@@ -53,8 +53,10 @@ ERR_PATH = f'{DATA_PATH}/{ERR_PATH}'
 
 TWEET_PATH = f'{DATA_PATH}/{TWEET_PATH}'
 DOWNLOAD_DATA_LIST_PATH = f'{DATA_PATH}/{DOWNLOAD_DATA_LIST_PATH}'
-PHOTO_DATA_PATH = f'{DATA_PATH}/{PHOTO_PATH}_{DATA_PATH}'
-VIDEO_DATA_PATH = f'{DATA_PATH}/{VIDEO_PATH}_{DATA_PATH}'
+PHOTO_PATH = f'{DATA_PATH}/{PHOTO_PATH}'
+VIDEO_PATH = f'{DATA_PATH}/{VIDEO_PATH}'
+PHOTO_DATA_PATH = f'{PHOTO_PATH}_{DATA_PATH}'
+VIDEO_DATA_PATH = f'{VIDEO_PATH}_{DATA_PATH}'
 
 class TwitterMediaCrawler:
     def __init__(self):
@@ -120,30 +122,24 @@ class TwitterMediaCrawler:
         if not os.path.exists(ERR_PATH):
             return
 
-        err_text = ""
-        with open(ERR_PATH, 'r') as f:
-            for line in f.readlines():
-                if not line:
-                    continue
+        f = open(ERR_PATH, 'r')
+        lines = f.readlines()
+        f.close()
 
-                errData = line.split(' ')
-                fileName = errData[0].strip()
-                fileURL = errData[1].strip()
-                try:
-                    savePath = None
-                    if (fileName[0] == '.'):
-                        fileName = fileName[1:]
-                        savePath = f'{VIDEO_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
-                    else:
-                        savePath = f'{PHOTO_PATH}/{fileName[:6]}/{fileName[:8]}/{fileName}'
-                    ext = os.path.splitext(fileURL)[-1]
-                    savePath = self.GetNewFilePath(savePath, ext)
-                    wget.download(fileURL, savePath)
-                except:
-                    err_text += line
+        os.remove(ERR_PATH)
+        
+        for line in lines:
+            if not line:
+                continue
 
-        with open(ERR_PATH, 'w') as f:
-            f.write(err_text)
+            errData = line.split(' ')
+            fileName = errData[0].strip()
+            fileURL = errData[1].strip()
+
+            if (fileName[0] == '.'):
+                self.DownloadMediaFromURL(VIDEO_PATH, fileName[1:], fileURL)
+            else:
+                self.DownloadMediaFromURL(PHOTO_PATH, fileName, fileURL)
 
         print('-----\n')
     
@@ -192,6 +188,9 @@ class TwitterMediaCrawler:
                 createAt = self.GetTweetDate(tw.created_at)
                 print(f'create : {createAt}')
                 formatedDate = createAt.strftime("%Y%m%d_%H%M%S")
+
+                tweetDate = self.GetTweetDate(t.created_at)
+                print(f'tweetDate : {tweetDate}')
 
                 tweetDictKey = f'{tw.id}_{formatedDate}'
                 tweet = {tweetDictKey: {'user_id': tw.user.id_str, 'user_name': tw.user.name, 'screen_name': tw.user.screen_name, 'created': str(createAt)}}
@@ -267,64 +266,43 @@ class TwitterMediaCrawler:
         print(f'Video : {len(self.video)}\n\n')
 
 
+    def DownloadMediaFromURL(self, rootPath, mediaName, mediaURL):
+        try:
+            savePath = f'{rootPath}/{mediaName[:6]}'
+            if not os.path.exists(savePath):
+                os.mkdir(savePath)
+
+            savePath += f'/{mediaName[:8]}'
+            if not os.path.exists(savePath):
+                os.mkdir(savePath)
+
+            fileName = mediaURL.split('/')[-1]
+            savePath += f'/{mediaName}_{fileName}'
+
+            wget.download(mediaURL, savePath)
+        except:
+            err_text = ''
+            if rootPath == PHOTO_PATH:
+                err_text = f'{mediaName} {mediaURL}\n'
+            else:
+                err_text = f'.{mediaName} {mediaURL}\n'
+
+            with open(ERR_PATH, 'a+') as f:
+                f.write(err_text)
+
     def DownloadData(self):
         if not os.path.exists(PHOTO_PATH):
             os.mkdir(PHOTO_PATH)
         if not os.path.exists(VIDEO_PATH):
             os.mkdir(VIDEO_PATH)
 
-
-        err_text = ""
-
         print("Start Photo Download")
         for image in self.photo:
-            try:
-                photoName = image[0]
-                photoURL = image[1]
-                savePath = f'{PHOTO_PATH}/{photoName[:6]}'
-                if not os.path.exists(savePath):
-                    os.mkdir(savePath)
-
-                savePath += f'/{photoName[:8]}'
-                if not os.path.exists(savePath):
-                    os.mkdir(savePath)
-
-                ext = os.path.splitext(photoURL)[-1]
-                savePath += f'/{photoName}'
-
-                savePath = self.GetNewFilePath(savePath, ext)
-
-                wget.download(photoURL, savePath)
-            except:
-                err_text += f'{image[0]} {image[1]}\n'
+            self.DownloadMediaFromURL(PHOTO_PATH, image[0], image[1])
 
         print("\n\nStart Video Download")
         for v in self.video:
-            try:
-                vName = v[0]
-                vURL = v[1]
-                savePath = f'{VIDEO_PATH}/{vName[:6]}'
-                if not os.path.exists(savePath):
-                    os.mkdir(savePath)
-
-                savePath += f'/{vName[:8]}'
-                if not os.path.exists(savePath):
-                    os.mkdir(savePath)
-
-                ext = os.path.splitext(vURL)[-1]
-                savePath += f'/{vName}'
-
-                savePath = self.GetNewFilePath(savePath, ext)
-
-                wget.download(vURL, savePath)
-            except:
-                err_text += f'.{v[0]} {v[1]}\n'
-
-
-        # Error
-
-        with open(ERR_PATH, 'a+') as f:
-            f.write(err_text)
+            self.DownloadMediaFromURL(VIDEO_PATH, v[0], v[1])
     
 
     def SaveDownloadDataList(self):
@@ -334,15 +312,9 @@ class TwitterMediaCrawler:
         dataList = ''
 
         for image in self.photo:
-            photoName = image[0]
-            photoURL = image[1]
-            
             dataList += f'{image[0]} {image[1]}\n'
 
         for v in self.video:
-            vName = v[0]
-            vURL = v[1]
-            
             dataList += f'.{v[0]} {v[1]}\n'
         
         currentDate = datetime.datetime.now().strftime('%Y%m%d')
