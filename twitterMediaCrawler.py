@@ -153,13 +153,13 @@ class TwitterMediaCrawler:
                 print(f'\n\nsince : {self.sinceID}, max : {self.lastID}\n\n')
 
                 if self.sinceID is not None and self.lastID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, since_id=(self.sinceID+1), max_id=(self.lastID-1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, since_id=(self.sinceID+1), max_id=(self.lastID-1))
                 elif self.sinceID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, since_id=(self.sinceID+1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, since_id=(self.sinceID+1))
                 elif self.lastID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, max_id=(self.lastID-1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, max_id=(self.lastID-1))
                 else:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False)
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True)
             except tweepy.TweepError as e:
                 print(e)
                 break
@@ -279,7 +279,12 @@ class TwitterMediaCrawler:
             fileName = mediaURL.split('/')[-1]
             savePath += f'/{mediaName}_{fileName}'
 
-            wget.download(mediaURL, savePath)
+            downloadURL = mediaURL
+            if rootPath == PHOTO_PATH:
+                frontURL, ext = os.path.splitext(mediaURL)
+                downloadURL = f'{frontURL}?format={ext[1:]}&name=large'
+
+            wget.download(downloadURL, savePath)
         except:
             err_text = ''
             if rootPath == PHOTO_PATH:
