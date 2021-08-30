@@ -107,8 +107,7 @@ class IllustCrawler:
         self.GetTweet()
         if isDownloadMedia:
             self.DownloadData()
-        else:
-            self.SaveDownloadDataList()
+        self.SaveDownloadDataList()
         self.SavePhotoData()
         self.SaveVideoData()
         self.UpdateID()
@@ -347,7 +346,12 @@ class IllustCrawler:
             dataList += f'.{v[0]} {v[1]}\n'
         
         currentDate = datetime.datetime.now().strftime('%Y%m%d')
-        downloadDataListPath = f'{DOWNLOAD_DATA_LIST_PATH}/{currentDate}.txt'
+
+        downloadDataListPath = f'{DOWNLOAD_DATA_LIST_PATH}/{currentDate[:6]}'
+        if not os.path.exists(downloadDataListPath):
+            os.mkdir(downloadDataListPath)
+
+        downloadDataListPath += f'/{currentDate}.txt'
         
         with open(downloadDataListPath, 'a+') as f:
             f.write(dataList)
@@ -477,4 +481,4 @@ class IllustCrawler:
                     json.dump(self.videoData[videoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
 
-IllustCrawler().StartCrawler(False)
+IllustCrawler().StartCrawler(True)
