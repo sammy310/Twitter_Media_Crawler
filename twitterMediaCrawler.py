@@ -153,13 +153,13 @@ class TwitterMediaCrawler:
                 print(f'\n\nsince : {self.sinceID}, max : {self.lastID}\n\n')
 
                 if self.sinceID is not None and self.lastID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, since_id=(self.sinceID+1), max_id=(self.lastID-1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, tweet_mode='extended', since_id=(self.sinceID+1), max_id=(self.lastID-1))
                 elif self.sinceID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, since_id=(self.sinceID+1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, tweet_mode='extended', since_id=(self.sinceID+1))
                 elif self.lastID is not None:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, max_id=(self.lastID-1))
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, tweet_mode='extended', max_id=(self.lastID-1))
                 else:
-                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True)
+                    tweets = api.home_timeline(count=self.getCount, exclude_replies=False, include_entities=True, tweet_mode='extended')
             except tweepy.TweepError as e:
                 print(e)
                 break
@@ -184,7 +184,7 @@ class TwitterMediaCrawler:
                 print(f'ID : {tw.id}')
                 print(f'USER_ID : {tw.user.id}')
                 print(f'USER : {tw.user.name}')
-                print(f'MSG : {tw.text}')
+                print(f'MSG : {tw.full_text}')
                 createAt = self.GetTweetDate(tw.created_at)
                 print(f'create : {createAt}')
                 formatedDate = createAt.strftime("%Y%m%d_%H%M%S")
@@ -193,11 +193,7 @@ class TwitterMediaCrawler:
                 print(f'tweetDate : {tweetDate}')
 
                 tweetDictKey = f'{tw.id}_{formatedDate}'
-                tweet = {tweetDictKey: {'user_id': tw.user.id_str, 'user_name': tw.user.name, 'screen_name': tw.user.screen_name, 'created': str(createAt)}}
-                if hasattr(tw, 'full_text'):
-                    tweet[tweetDictKey]['message'] = tw.full_text
-                else:
-                    tweet[tweetDictKey]['message'] = tw.text
+                tweet = {tweetDictKey: {'user_id': tw.user.id_str, 'user_name': tw.user.name, 'screen_name': tw.user.screen_name, 'created': str(createAt), 'message': tw.full_text}}
                 
 
                 if hasattr(tw, 'extended_entities'):
@@ -221,7 +217,7 @@ class TwitterMediaCrawler:
                                 tweet[tweetDictKey]['media'] = list()
                             tweet[tweetDictKey]['media'].append(videoURL)
                         else:
-                            print(f'pic : {media["media_url"]}')
+                            print(f'photo : {media["media_url"]}')
                             self.photo.append([formatedDate, media['media_url']])
 
                             if not 'photo' in tweet[tweetDictKey]:
