@@ -60,7 +60,7 @@ VIDEO_DATA_PATH = f'{VIDEO_PATH}_{DATA_PATH}'
 
 class TwitterMediaCrawler:
     def __init__(self):
-        self.getCount = 200
+        self.getCount = 100
 
         self.sinceID = None
         self.latestID = None
@@ -454,4 +454,5 @@ class TwitterMediaCrawler:
                     json.dump(self.videoData[videoKey][DATA_KEY], f, indent=4, ensure_ascii=False)
 
 
-TwitterMediaCrawler().StartCrawler(True)
+if __name__ == '__main__':
+    TwitterMediaCrawler().StartCrawler(True)
