@@ -107,11 +107,17 @@ class TwitterMediaCrawler:
     def StartCrawler(self, isDownloadMedia):
         self.ErrorCheck()
         self.GetTweet()
+        
         if isDownloadMedia:
-            self.DownloadData()
-        self.SaveDownloadDataList()
+            self.DownloadPhotoData()
         self.SavePhotoData()
+        self.SavePhotoDownloadDataList()
+
+        if isDownloadMedia:
+            self.DownloadVideoData()
         self.SaveVideoData()
+        self.SaveVideoDownloadDataList()
+
         self.UpdateID()
 
 
@@ -275,6 +281,9 @@ class TwitterMediaCrawler:
             fileName = mediaURL.split('/')[-1]
             savePath += f'/{mediaName}_{fileName}'
 
+            if os.path.exists(savePath):
+                return
+
             downloadURL = mediaURL
             if rootPath == PHOTO_PATH:
                 frontURL, ext = os.path.splitext(mediaURL)
@@ -291,22 +300,24 @@ class TwitterMediaCrawler:
             with open(ERR_PATH, 'a+') as f:
                 f.write(err_text)
 
-    def DownloadData(self):
+    def DownloadPhotoData(self):
         if not os.path.exists(PHOTO_PATH):
             os.mkdir(PHOTO_PATH)
-        if not os.path.exists(VIDEO_PATH):
-            os.mkdir(VIDEO_PATH)
 
         print("Start Photo Download")
         for image in self.photo:
             self.DownloadMediaFromURL(PHOTO_PATH, image[0], image[1])
+    
+    def DownloadVideoData(self):
+        if not os.path.exists(VIDEO_PATH):
+            os.mkdir(VIDEO_PATH)
 
         print("\n\nStart Video Download")
         for v in self.video:
             self.DownloadMediaFromURL(VIDEO_PATH, v[0], v[1])
     
 
-    def SaveDownloadDataList(self):
+    def SavePhotoDownloadDataList(self):
         if not os.path.exists(DOWNLOAD_DATA_LIST_PATH):
             os.mkdir(DOWNLOAD_DATA_LIST_PATH)
         
@@ -314,6 +325,23 @@ class TwitterMediaCrawler:
 
         for image in self.photo:
             dataList += f'{image[0]} {image[1]}\n'
+
+        currentDate = datetime.datetime.now().strftime('%Y%m%d')
+
+        downloadDataListPath = f'{DOWNLOAD_DATA_LIST_PATH}/{currentDate[:6]}'
+        if not os.path.exists(downloadDataListPath):
+            os.mkdir(downloadDataListPath)
+
+        downloadDataListPath += f'/{currentDate}.txt'
+        
+        with open(downloadDataListPath, 'a+') as f:
+            f.write(dataList)
+    
+    def SaveVideoDownloadDataList(self):
+        if not os.path.exists(DOWNLOAD_DATA_LIST_PATH):
+            os.mkdir(DOWNLOAD_DATA_LIST_PATH)
+        
+        dataList = ''
 
         for v in self.video:
             dataList += f'.{v[0]} {v[1]}\n'
